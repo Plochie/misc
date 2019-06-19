@@ -1,0 +1,186 @@
+<div [@staggerFadeInOut]="questionGroups.length">
+
+  <div *ngFor="let questionGroup of questionGroups; let questionGroupIndex=index" class="clr-row mt-1">
+
+    <div class="clr-col">
+
+      <div class="clr-row question-group-title" *ngIf="pureForm === false">
+        <div class="clr-col">
+          <strong>{{questionGroup.groupTitle}}</strong>
+        </div>
+        <ng-container>
+          <div class="clr-col">
+            <a class="options text-primary" (click)="questionGroup.editable = !questionGroup.editable"
+              *ngIf="questionGroup.editable === false">
+              <clr-icon shape="pencil" size="12"></clr-icon> Edit
+            </a>
+          </div>
+        </ng-container>
+      </div>
+
+      <ng-container *ngFor="let question of questionGroup.questions; let i=index">
+        
+        <div class="clr-row" style="margin-bottom: 0.4rem">
+
+          <div class="clr-col">
+
+            <div *ngIf="questionGroup.editable || pureForm" @fadeInOut>
+              <ng-container [ngTemplateOutlet]="questionSwitch"
+                [ngTemplateOutletContext]="{ question: question, questions: questionGroup.questions }">
+              </ng-container>
+            </div>
+
+            <ng-container *ngIf="pureForm === false">
+              <div [ngSwitch]="question.controlType" class="clr-form-control clr-row"
+                *ngIf="questionGroup.editable === false">
+                <!-- if only one question then dont show label -->
+                <label *ngIf="questionGroup.questions.length > 1" [for]="question.key"
+                  class="clr-control-label clr-col-12 clr-col-md-2">{{question.label}}</label>
+                <div class="clr-control-container"
+                  [ngClass]="{'clr-col-md-10 clr-col-12' : questionGroup.questions.length > 1, 'clr-col': questionGroup.questions.length == 1 }">
+
+                  <ng-container *ngSwitchCase="'quill'">
+                    <div class="ql-editor" *ngIf="patchValue[question.key]"
+                      [innerHTML]="patchValue[question.key] | sanitizeHtml" style="line-height: 1.1rem"></div>
+                  </ng-container>
+
+                  <ng-container *ngSwitchCase="'chipbox'">
+                    <span class="label label-info" *ngFor="let chip of form.controls[question.key].value">
+                      {{chip.key}}
+                    </span>
+                  </ng-container>
+
+                  <ng-container *ngSwitchDefault>
+                    <span style="font-size: 13px;">{{patchValue[question.key]}}</span>
+                  </ng-container>
+                </div>
+              </div>
+            </ng-container>
+          </div>
+        </div>
+      </ng-container>
+
+      <ng-container *ngIf="pureForm === false">
+        <div class="clr-row mt-1" *ngIf="questionGroup.editable">
+          <div class="clr-col">
+            <button class="btn-sm btn btn-success" (click)="onQuestionGroupSave(questionGroup)" type="button">
+              <clr-icon shape="floppy"></clr-icon> save
+            </button>
+            <button class="btn-sm btn btn-danger" (click)="onQuestionGroupDiscard(questionGroup)" type="reset">
+              <clr-icon shape="times"></clr-icon>discard
+            </button>
+          </div>
+        </div>
+      </ng-container>
+    </div>
+  </div>
+
+  <div class="clr-row mt-1" *ngIf="pureForm">
+    <div class="clr-col">
+      <button class="btn btn-success">Submit</button>
+      <button class="btn btn-primary btn-outline" (click)="onGoBack()">Go back</button>
+    </div>
+  </div>
+
+</div>
+
+
+
+
+<ng-template #questionSwitch let-question="question" let-questions="questions">
+
+  <div [ngSwitch]="question.controlType" [formGroup]="form">
+
+    <div class="clr-form-control clr-row" *ngSwitchCase="'textbox'">
+      <label [for]="question.key" class="clr-control-label clr-col-12"
+        [ngClass]="{'clr-col-md-2' : questions.length === 1, 'clr-col-md-4': questions.length > 1 }"
+        *ngIf="questions.length > 1 || pureForm">{{question.label}}</label>
+      <div class="clr-control-container clr-col"
+        [ngClass]="{'clr-error' : question.key.touched && question.key.errors?.required }">
+        <div class="clr-input-wrapper">
+          <input [formControlName]="question.key" [id]="question.key" [type]="question.type" [name]="question.key"
+            class="clr-input">
+          <clr-icon class="clr-validate-icon" shape="exclamation-circle"
+            *ngIf="question.key.touched && question.key.errors"></clr-icon>
+        </div>
+        <span *ngIf="question.key.touched && question.key.errors?.required" class="clr-subtext">{{question.label}} is
+          required.</span>
+      </div>
+    </div>
+
+    <div class="clr-row" *ngSwitchCase="'chipbox'">
+      <label [for]="question.key" class="clr-control-label clickable clr-col-12 clr-col-md-2"
+        [ngClass]="{'clr-col-md-2' : questions.length === 1, 'clr-col-md-4': questions.length === 2 }"
+        *ngIf="questions.length > 1 || pureForm">{{question.label}}</label>
+
+      <div class="clr-control-container clr-col">
+
+        <div class="clr-input-wrapper">
+
+          <div class="chip-chip" *ngFor="let chip of form.controls[question.key].value">
+            <span class="label label-info">{{chip.key}}</span>
+          </div>
+
+          <div class="chip-input">
+            <input class="clr-input" [id]="question.key" [type]="question.type" [name]="question.key"
+              (keyup)="onAddChip($event, question.key)" [formControlName]="question.key + TEMP_CHIP">
+          </div>
+
+        </div>
+        <span *ngIf="question.key.touched && question.key.errors?.required" class="clr-subtext">{{question.label}} is
+          required.</span>
+      </div>
+
+    </div>
+
+
+
+    <div class="clr-row" *ngSwitchCase="'dropdown'">
+      <label [for]="question.key" class="clr-control-label clickable clr-col-12 clr-col-md-2"
+        [ngClass]="{'clr-col-md-2' : questions.length === 1, 'clr-col-md-4': questions.length === 2 }"
+        *ngIf="questions.length > 1 || pureForm">{{question.label}}</label>
+      <div class="clr-control-container clr-col">
+        <div class="clr-select-wrapper">
+
+          <select [name]="question.key" [formControlName]="question.key" class="clr-select">
+            <option *ngFor="let opt of question.options" [value]="opt.key">{{opt.value}}</option>
+          </select>
+          <clr-icon class="clr-validate-icon" shape="exclamation-circle"
+            *ngIf="question.key.touched && question.key.errors"></clr-icon>
+        </div>
+        <span *ngIf="question.key.touched && question.key.errors?.required" class="clr-subtext">{{question.label}} is
+          required.</span>
+      </div>
+    </div>
+
+
+    <div class="clr-form-control clr-row" *ngSwitchCase="'textarea'">
+      <label [for]="question.key" class="clr-control-label clr-col-12 clr-col-md-2"
+        [ngClass]="{'clr-col-md-2' : questions.length === 1, 'clr-col-md-4': questions.length === 2 }"
+        *ngIf="questions.length > 1  || pureForm">{{question.label}}</label>
+      <div class="clr-control-container clr-col">
+        <div class="clr-textarea-wrapper">
+          <textarea [formControlName]="question.key" [id]="question.key" [name]="question.key"
+            class="clr-textarea"></textarea>
+          <clr-icon class="clr-validate-icon" shape="exclamation-circle"
+            *ngIf="question.key.touched && question.key.errors"></clr-icon>
+        </div>
+        <span *ngIf="question.key.touched && question.key.errors?.required" class="clr-subtext">{{question.label}} is
+          required.</span>
+      </div>
+    </div>
+
+    <div class="clr-form-control clr-row" *ngSwitchCase="'quill'">
+      <label [for]="question.key" class="clr-control-label clr-col-12 clr-col-md-2"
+        [ngClass]="{'clr-col-md-2' : questions.length === 1, 'clr-col-md-4': questions.length === 2 }"
+        *ngIf="questions.length > 1  || pureForm">{{question.label}}</label>
+      <div class="clr-control-container clr-col">
+        <quill-editor [style]="{height: '200px'}" [formControlName]="question.key" [sanitize]="true"></quill-editor>
+      </div>
+    </div>
+
+  </div>
+</ng-template>
+
+
+<!-- [ngClass]="{'clr-col-md-10 clr-col-12' : questions.length > 1, 'clr-col': questions.length == 1 }" -->

@@ -1,0 +1,37 @@
+.options {
+    font-size: 0.5rem;
+    float: right;
+    // text-decoration: underline;
+}
+
+.editable-options {
+    margin-top: 10px;
+    text-align: right;
+}
+
+.question-group-title {
+    border-bottom: 1px solid lightgrey;
+    margin-bottom: 10px;
+    padding-bottom: 5px;
+}
+
+
+.clr-form-control {
+    margin-top: 0;
+}
+
+// .clr-row {
+//     border: 1px dotted red;
+// }
+
+// .clr-col {
+//     border: 1px solid green;
+// }
+
+.chip-chip {
+    float: left;
+}
+
+.chip-input {
+    float: left;
+}
